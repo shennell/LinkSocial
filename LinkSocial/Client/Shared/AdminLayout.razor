@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    @*<div class="sidebar">
+        <NavMenu />
+    </div>*@
+
+    <div class="main">
+        <nav class="navbar navbar-expand-sm navbar-light navbar-toggleable-sm bg-white border-bottom mb-3">
+            <div class="container">
+                <a class="navbar-brand logo-text" href="/Admin/Links">Linkfish <sup style="font-size:65%;">beta</sup></a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
+
+
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" id="register" href="/Admin/Links">Links</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" id="register" href="/Admin/Appearance">Appearance</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" id="register" href="/Identity/Account/Manage">Account</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" id="login" href="/Identity/Account/Logout">Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+
+
+        <div class="container-margin">
+            @Body
+        </div>
+    </div>
+
+</div>

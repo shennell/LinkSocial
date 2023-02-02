@@ -1,0 +1,75 @@
+﻿@using LinkSocial.Shared.Models
+@inject HttpClient Http 
+@inject MessageService _messageService;
+
+<a role="button" @onclick="@(() => OpenEditModal())"><Icon Type="form" Theme="outline" Style="font-size:1.5rem;" /></a>
+
+<Modal Title="Edit Link" Visible="@IsVisible" OnOk="@HandleOk" OnCancel="@HandleCancel" OkText="@("Submit")" ConfirmLoading="@confirmLoading">
+    <Form Model="@UpdatedLink" OnFinish="@EditLink">
+        <FormItem Style="margin-bottom:20px;">
+            <AntDesign.Input @bind-Value="@UpdatedLink.Title" placeholder="Title" MaxLength="100" AutoFocus="true">
+                <Prefix><Icon Type="edit" Style="font-size:1rem;"></Icon></Prefix>
+            </AntDesign.Input>
+        </FormItem>
+        <FormItem Style="margin-bottom:20px;">
+            <AntDesign.Input @bind-Value="@UpdatedLink.URL" placeholder="URL" MaxLength="300">
+                <Prefix><Icon Type="link" Style="font-size:1rem;"></Icon></Prefix>
+            </AntDesign.Input>
+        </FormItem>
+        <FormItem Style="margin-bottom:20px;">
+            <Switch @bind-Value="UpdatedLink.Active"><CheckedChildrenTemplate><Icon Type="check"></Icon></CheckedChildrenTemplate><UnCheckedChildrenTemplate><Icon Type="close"></Icon></UnCheckedChildrenTemplate></Switch>
+        </FormItem>
+    </Form>
+
+</Modal>
+@**@
+@code {
+    [Parameter]
+    public LinkSocial.Shared.Models.Link UpdatedLink { get; set; }
+
+    [Parameter]
+    public EventCallback OnLinkUpdated { get; set; }
+
+    public bool IsVisible { get; set; } = false;
+    private bool confirmLoading = false;
+
+    //private LinkModel linkModel = new LinkModel();
+
+
+    private void EditLink()
+    {
+        _messageService.Info("Working");
+    }
+
+    private async void HandleOk()
+    {
+        confirmLoading = true;
+        await Task.Delay(1000);
+
+        var response = await Http.PostAsJsonAsync("api/Links/UpdateLink", UpdatedLink);
+
+        if(response.IsSuccessStatusCode)
+        {
+            _messageService.Success("Link updated");
+        }
+        else
+        {
+            _messageService.Error("Error updating link");
+        }
+
+        IsVisible = false;
+        confirmLoading = false;
+        StateHasChanged();
+        await OnLinkUpdated.InvokeAsync();
+    }
+
+    private void HandleCancel()
+    {
+        IsVisible = false;
+    }
+
+    private void OpenEditModal()
+    {
+        IsVisible = true;
+    }
+}

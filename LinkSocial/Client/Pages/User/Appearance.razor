@@ -1,0 +1,184 @@
+﻿@page "/admin/appearance"
+@using Microsoft.AspNetCore.Authorization
+@using LinkSocial.Shared.Models
+@using System.IO;
+@attribute [Authorize]
+@inject MessageService _messageService
+@inject HttpClient Http
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-addlinks">
+            <h1>Appearance</h1>
+            <p>Adjust the appearance of your page using the options below.</p>
+            <div class="content-main">
+                <Form Model="@settings" OnFinish="@SaveSettings">
+                    <FormItem Style="margin-bottom:10px;">
+                        <div class="setting-title">Profile Picture</div>
+                        <img src="@imageSource" width="145" height="145" /><br />
+                        <InputFile OnChange="@HandleChange" />
+                    </FormItem>
+                    <FormItem Style="margin-bottom:10px;">
+                        <div class="setting-title">Page Title</div>
+                        <AntDesign.Input @bind-Value="@settings.PageTitle" Size="@InputSize.Large" Placeholder="Business Name" MaxLength="100" />
+                    </FormItem>
+
+                    <FormItem Style="margin-bottom:10px;">
+                        <div class="setting-title">Introduction</div>
+                        <TextArea @bind-Value="@settings.IntroText" Placeholder="A little about yourself" Style="font-size:16px;" MaxLength="1000"/>
+                    </FormItem>
+                    <div class="setting-title">Hide profile picture, title or description</div>
+                    <FormItem Style="margin-bottom:10px;">
+                        <Switch @bind-Value="@settings.HideProfilePic" /> <span>Hide profile picture</span><br />
+                    </FormItem>
+
+                    <FormItem Style="margin-bottom:10px;">
+                        <Switch @bind-Value="@settings.HideTitle" /> <span>Hide page title</span><br />
+                    </FormItem>
+
+                    <FormItem Style="margin-bottom:10px;">
+                        <Switch @bind-Value="@settings.HideIntroText" /> <span>Hide introduction</span>
+                    </FormItem>
+                    <br />
+                    <Button Type="primary" Size="large" HtmlType="submit">Save</Button>
+
+                </Form>
+            </div>
+            </div>
+        @*<div class="col-md-4">
+                <PagePreview PageName="@pageName" />
+            </div>*@
+    </div>
+</div>
+
+@code {
+    private Settings settings = new Settings();
+    private string pageTitle;
+    private string pageName;
+    private string imageSource = "img/profilepicture_default.png";
+    private string imageName;
+    private bool updateSettings = false;
+    private IBrowserFile file;
+    private long maxFileSize = 1024 * 1024 * 15;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var user = authState.User;
+        pageName = user.Identity.Name;
+
+
+        try{
+            settings = await Http.GetFromJsonAsync<Settings>($"api/Settings/{pageName}");
+            updateSettings = true;
+            //TODO: Update Azure Blob storage link
+            imageSource =  settings.ProfilePictureName == null ? imageSource : $"https://linksocialstorage.blob.core.windows.net/profilepictures/{settings.ProfilePictureName}";
+            imageName = settings.ProfilePictureName;
+
+        }
+        catch{
+            settings = new Settings();
+        }
+    }
+
+    bool BeforeUpload(IBrowserFile file)
+    {
+        var fileTypeValid = file.ContentType == "image/jpeg" || file.ContentType == "image/png" || file.ContentType == "image/webp";
+        if(!fileTypeValid)
+        {
+            _messageService.Error("Only JPEG, PNG AND WEBP formats are supported.");
+        }
+
+        var fileSizeValid = file.Size < maxFileSize;
+        if(!fileSizeValid)
+        {
+            _messageService.Error("Image must be smaller than 2MB.");
+        }
+
+        return fileTypeValid && fileSizeValid;
+    }
+
+    private async Task HandleChange(InputFileChangeEventArgs e)
+    {
+        _messageService.Info("Loading image...");
+        file = e.File;
+
+        if(BeforeUpload(file))
+        {
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream().ReadAsync(buffer);
+            imageSource = $"data:image/png;base64,{Convert.ToBase64String(buffer)}";
+            _messageService.Success("Image loaded successfully.");
+        }
+        @*else
+        {
+            _messageService.Error("There was an error uploading the image. Please check the file and try again.");
+        }*@
+    }
+
+    private async Task SaveSettings()
+    {
+        if(file != null)
+        {
+            using (StreamContent streamContent = new StreamContent(file.OpenReadStream()))
+            {
+                var response = await Http.PostAsync("api/UploadImage", streamContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    imageName = await response.Content.ReadAsStringAsync();
+
+                }
+                else
+                {
+                    _messageService.Error("Error uploading file.");
+                }
+
+            }
+        }
+
+        settings.PageName = pageName;
+        settings.ProfilePictureName = imageName;
+        settings.Theme = 0;
+
+        var msgConfig = new MessageConfig() { Content = "Saving settings..." };
+        _messageService.Loading(msgConfig);
+
+        if(updateSettings)
+        {
+            var saveResponse = await Http.PostAsJsonAsync("api/Settings/UpdateSettings", settings);
+            if (saveResponse.IsSuccessStatusCode)
+            {
+                await OnInitializedAsync();
+                msgConfig.Content = "Settings saved";
+                msgConfig.Duration = 2;
+                _messageService.Success(msgConfig);
+            }
+            else
+            {
+                msgConfig.Content = "Error saving settings";
+                msgConfig.Duration = 2;
+                _messageService.Error(msgConfig);
+            }
+        }
+        else{
+            var saveResponse = await Http.PostAsJsonAsync("api/Settings/Create", settings);
+            if (saveResponse.IsSuccessStatusCode)
+            {
+                await OnInitializedAsync();
+                msgConfig.Content = "Settings saved";
+                msgConfig.Duration = 2;
+                _messageService.Success(msgConfig);
+            }
+            else
+            {
+                msgConfig.Content = "Error saving settings";
+                msgConfig.Duration = 2;
+                _messageService.Error(msgConfig);
+            }
+        }
+    }
+
+}

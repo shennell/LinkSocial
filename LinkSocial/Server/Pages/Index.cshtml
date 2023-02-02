@@ -1,0 +1,51 @@
+﻿@page
+@model LinkSocial.Server.Pages.IndexModel
+@{
+    Layout = "_IndexLayout";
+    ViewData["Title"] = "Home";
+}
+
+<div class="container" style="max-width:1100px;padding-bottom:1rem;">
+    <main role="main" class="pb-3">
+        <div class="top-content">
+            @*<div class="top-heading">Create a social landing page in minutes</div>
+                <p class="p-top">Just pick a page name and start adding links. Share your unique Linkfi.sh page on your socials.</p>
+                <img src="~/img/homepage-phone-30p.png" class="img-center" />*@
+
+            <div class="row">
+                <div class="col-lg-7">
+                    <h1 class="big-heading">Create a social landing page in minutes</h1>
+                    <p class="p-top">Pick a page name. Add some links.</p>
+                    <p class="p-bottom">Share your unique profile page online with others.</p>
+                    <a role="button" class="btn btn-primary btn-lg btn-top" href="/Identity/Account/Register">Create my free account</a>
+                </div>
+                <div class="col-lg-5">
+                    <img class="img-center" src="~/img/homepage-phone-30p.png" alt="iphone-mockup">
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<div id="features">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="feature-box col-lg-4">
+                <i class="bi bi-check-circle icon-features"></i>
+                <h3 class="feature-title">Free</h3>
+                <p>Get started on Linkfish for free.</p>
+            </div>
+
+            <div class="feature-box col-lg-4">
+                <i class="bi bi-pencil-square icon-features"></i>
+                <h3 class="feature-title">Customizable</h3>
+                <p>Customize your page to suit your brand.</p>
+            </div>
+
+            <div class="feature-box col-lg-4">
+                <i class="bi bi-link-45deg icon-features"></i>
+                <h3 class="feature-title">20 Links</h3>
+                <p>Add up to 20 links to your page for free.</p>
+            </div>
+        </div>
+    </div>
+</div>

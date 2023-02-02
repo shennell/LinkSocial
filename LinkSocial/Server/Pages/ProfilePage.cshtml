@@ -1,0 +1,41 @@
+﻿@page "/{pageName}"
+@model LinkSocial.Server.Pages.ProfilePageModel
+@using LinkSocial.Shared.Models;
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.PageName - LinkSocial</title>
+    <link rel="stylesheet" href="~/css/profilepage-dark.css" />
+</head>
+<body>
+    
+    <div class="main-content">
+        <div class="container">
+            <div class="page-profilepicture">
+            @if(!Model.PageSettings.HideProfilePic)
+            {
+                <img src="@(String.IsNullOrEmpty(Model.PageSettings.ProfilePictureName) ? "/img/profilepicture_default.png" : $"https://linksocialstorage.blob.core.windows.net/profilepictures/{Model.PageSettings.ProfilePictureName}")" class="img-profilepicture"/>
+            }
+            
+            </div>
+            <div class="page-title">@(String.IsNullOrEmpty(Model.PageSettings.PageTitle) ? $"@{Model.PageName}" : Model.PageSettings.HideTitle ? $"@{Model.PageName}" : Model.PageSettings.PageTitle)</div>
+            <div class="page-intotext"><p>@(Model.PageSettings.HideIntroText ? "" : Model.PageSettings.IntroText)</p></div>
+        </div>
+
+        @foreach (Link l in Model.Links.Where(l => l.Title != null && l.URL != null).OrderByDescending(l => l.Position))
+        {
+            <a href="@l.URL" class="link" target="_blank">
+                <div class="link-item">
+                    <span class="link-title">@l.Title</span>
+                </div>
+            </a>
+        }
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+﻿.container-links{
+    /*margin-top: 20px;*/
+    /*width: 35rem;*/
+}
+
+.col-addlinks {
+    padding-left: 30px;
+    padding-right: 30px;
+    margin-right: auto;
+    margin-left: auto;
+    max-width: 700px;
+}
+
+
+@media (max-width: 700px) {
+    .container-links {
+        width: 100%;
+    }
+}

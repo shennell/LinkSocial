@@ -1,0 +1,39 @@
+﻿@using LinkSocial.Shared.Models
+@inject HttpClient Http
+
+@if (LinksList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @foreach (var link in LinksList)
+    {
+        <div class="card" style="width: 35rem;margin-bottom: 10px;">
+            <div class="card-body">
+                <h5 class="card-title">@link.Title</h5>
+                <h6 class="card-subtitle mb-2 text-muted">@link.URL</h6>
+                <a href="/" class="card-link"><i class="bi bi-pencil-square"></i></a>
+                <a href="/" class="card-link"><i class="bi bi-trash"></i></a>
+            </div>
+        </div>
+    }
+}
+
+@code{
+    [Parameter]
+    public bool IsSuccess { get; set; }
+    private List<LinkSocial.Shared.Models.Link> LinksList { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            LinksList = await Http.GetFromJsonAsync<List<LinkSocial.Shared.Models.Link>>("api/Links/ubuntuking");
+        }
+        catch
+        {
+            string message = "error";
+        }
+
+    }
+}

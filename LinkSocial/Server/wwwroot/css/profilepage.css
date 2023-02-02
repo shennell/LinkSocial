@@ -1,0 +1,57 @@
+﻿body {
+    background-color: #fbfbfb;
+    font-family: 'Poppins', sans-serif;
+}
+
+.main-content {
+    display: block;
+    margin: 50px auto 0 auto;
+    width: 670px;
+}
+
+.link-item {
+    width: 100%;
+    background-color: #4f4f4f;
+    color: #fff;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.page-profilepicture {
+    margin-left: auto;
+    margin-right: auto;
+    width: 115px;
+}
+
+.img-profilepicture {
+    width: 115px;
+    height: 115px;
+    border-radius: 50%;
+}
+
+.page-title{
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #171717;
+}
+
+.page-intotext {
+    text-align: center;
+}
+
+.link {
+    text-decoration: none;
+}
+
+
+@media(max-width: 690px) {
+    .main-content{
+        width: 100%;
+    }
+}

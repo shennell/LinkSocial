@@ -1,0 +1,276 @@
+﻿@using LinkSocial.Shared.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject MessageService _messageService
+@inject ModalService _modalService
+
+<p>
+    <div class="addlink-header">
+        <h1 class="heading-main">Your Links</h1>
+        <div style="float:right;">
+            <Button Type="primary" Size="large" OnClick="ToggleAddLinkForm" ><i class="bi bi-plus-square"></i> Add New</Button> <a href="/@pageName" target="_blank"><Button Type="primary" Size="large"><i class="bi bi-arrow-up-right-square"></i> Preview</Button></a>
+        </div>
+    </div>
+
+    @if (numberOfLinks == 0)
+    {
+        <p class="p-no-links">You don't have any links yet. Click the button above to add your first link.</p>
+    }
+</p>
+
+    @if (!addLinkFormHidden)
+    {
+        <div class="card card-body card-link-item" style="">
+            <Form Model="@NewLink" OnFinish="@AddNew">
+                <FormItem Style="margin-bottom:7px;">
+                    <AntDesign.Input @bind-Value="@NewLink.Title" placeholder="Title" MaxLength="100" AutoFocus="true">
+                        <Prefix><Icon Type="edit" Style="font-size:1rem;"></Icon></Prefix>
+                    </AntDesign.Input>
+                </FormItem>
+                <FormItem Style="margin-bottom:7px;">
+                    <AntDesign.Input @bind-Value="@NewLink.URL" placeholder="URL" MaxLength="300">
+                        <Prefix><Icon Type="link" Style="font-size:1rem;"></Icon></Prefix>
+                    </AntDesign.Input>
+                </FormItem>
+                <FormItem Style="margin-bottom:7px;">
+                    <Switch @bind-Value="@NewLink.Active"><CheckedChildrenTemplate><Icon Type="check"></Icon></CheckedChildrenTemplate>
+                        <UnCheckedChildrenTemplate><Icon Type="close"></Icon></UnCheckedChildrenTemplate>
+                    </Switch>
+                </FormItem>
+                <Button type="primary" HtmlType="submit"><i class="bi bi-plus-square"></i> Add</Button>
+            </Form>
+        </div>
+    }
+
+    @if (LinksList == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <ul ondragover="event.preventDefault();" style="padding:0;">
+            @foreach (var link in LinksList)
+            {
+                <li draggable="@contentDraggable" style="list-style-type:none;cursor:-webkit-grab;cursor:grab;" @key="link.ID" tabindex="1"
+                    @ondragover="@(() => DropLink(link))" @ondrag="@(() => DragStart(link))" @ondrop="UpdateOrderOfLinks">
+                    <div class="card card-link-item" style="">
+                        <div class="card-body">
+                            <h5 class="card-title hide-excess">@(link.Title ?? "Title") </h5>
+                            <h6 class="card-subtitle mb-2 text-muted hide-excess">@(link.URL ?? "URL")</h6>
+                            <Switch Checked="link.Active" Loading="@isLoading" OnClick="(() => UpdateLinkStatus(link))" />
+                            <EditLinkModal UpdatedLink="link" OnLinkUpdated="GetLinks"/>
+                            <span style="float:right">
+                                <Popconfirm Title="Are you sure you want to delete this link?" OkText="Yes" CancelText="No" OnConfirm="@(() => OnDeleteLinkOk(link))" Placement="@PlacementType.TopRight">
+                                    <a><Icon Type="delete" Theme="outline" Style="font-size:1.5rem;" /></a>
+                                </Popconfirm>
+                            </span>
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    @code {
+        private string contentDraggable = "true";
+
+        private bool isLoading = false;
+        private async Task UpdateLinkStatus(LinkSocial.Shared.Models.Link link)
+        {
+            isLoading = true;
+            var msgConfig = new MessageConfig() { Content = "Updating link..." };
+            _messageService.Loading(msgConfig);
+            link.Active = !link.Active;
+
+            var response = await Http.PostAsJsonAsync($"api/Links/UpdateStatus", link);
+            await Task.Delay(1500);
+            if (response.IsSuccessStatusCode)
+            {
+                isLoading = false;
+                msgConfig.Content = "Link updated";
+                msgConfig.Duration = 2;
+                _messageService.Success(msgConfig);
+            }
+            else
+            {
+                msgConfig.Content = "Error updating link";
+                msgConfig.Duration = 2;
+                _messageService.Error(msgConfig);
+            }
+        }
+
+        private async Task OnDeleteLinkOk(LinkSocial.Shared.Models.Link link)
+        {
+            var msgConfig = new MessageConfig() { Content = "Deleting link..." };
+            _messageService.Loading(msgConfig);
+
+            try
+            {
+                var response = await Http.DeleteAsync($"api/Links/Delete/{link.ID}");
+                if (response.IsSuccessStatusCode)
+                {
+                    await GetLinks();
+                    msgConfig.Content = "Link deleted";
+                    msgConfig.Duration = 2;
+                    _messageService.Success(msgConfig);
+                }
+                else
+                {
+                    msgConfig.Content = "Error deleting link";
+                    msgConfig.Duration = 2;
+                    _messageService.Error(msgConfig);
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Error deleting the link.");
+            }
+
+        }
+
+        private bool addLinkFormHidden = true;
+
+        private void ToggleAddLinkForm()
+        {
+            if (numberOfLinks == 0)
+                numberOfLinks = 1;
+
+            addLinkFormHidden = !addLinkFormHidden;
+        }
+
+        private string pageName;
+        private int numberOfLinks;
+
+        [CascadingParameter]
+        private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
+        int currentIndex;
+
+        void DragStart(LinkSocial.Shared.Models.Link link)
+        {
+            currentIndex = GetIndex(link);
+        }
+
+        int GetIndex(LinkSocial.Shared.Models.Link link)
+        {
+            return LinksList.FindIndex(i => i.ID == link.ID);
+        }
+
+        void DropLink(LinkSocial.Shared.Models.Link link)
+        {
+            var index = GetIndex(link);
+            var currentLink = LinksList[currentIndex];
+            LinksList.RemoveAt(currentIndex);
+            LinksList.Insert(index, currentLink);
+
+            currentIndex = index;
+            StateHasChanged();
+
+        }
+
+        async void UpdateOrderOfLinks()
+        {
+            var msgConfig = new MessageConfig() { Content = "Updating link position..." };
+            _messageService.Loading(msgConfig);
+
+            int index = LinksList.Count - 1;
+            foreach (LinkSocial.Shared.Models.Link l in LinksList)
+            {
+                l.Position = index;
+                index--;
+            }
+
+            var response = await Http.PostAsJsonAsync("api/Links/UpdateOrderOfLinks", LinksList);
+            if (response.IsSuccessStatusCode)
+            {
+                msgConfig.Content = "Link positions updated";
+                msgConfig.Duration = 2;
+                _messageService.Success(msgConfig);
+            }
+            else
+            {
+                msgConfig.Content = "Error updating link positions";
+                msgConfig.Duration = 2;
+                _messageService.Error(msgConfig);
+            }
+        }
+
+        private LinkSocial.Shared.Models.Link NewLink = new LinkSocial.Shared.Models.Link();
+
+        //private LinkModel linkModel = new LinkModel();
+
+        private List<LinkSocial.Shared.Models.Link> LinksList { get; set; }
+
+        protected override async Task OnInitializedAsync()
+        {
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+            pageName = user.Identity.Name;
+
+            await GetLinks();
+
+        }
+
+        private async Task GetLinks()
+        {
+            try
+            {
+                numberOfLinks = await Http.GetFromJsonAsync<int>($"api/NumberOfLinks/{pageName}");
+                LinksList = await Http.GetFromJsonAsync<List<LinkSocial.Shared.Models.Link>>($"api/Links/{pageName}");
+                LinksList = LinksList.OrderByDescending(l => l.Position).ToList();
+                StateHasChanged();
+            }
+            catch
+            {
+                Console.WriteLine("An error occurred.");
+            }
+        }
+
+        private async Task AddNew()
+        {
+            if(numberOfLinks < 20)
+            {
+                addLinkFormHidden = !addLinkFormHidden;
+                var msgConfig = new MessageConfig() { Content = "Adding link..." };
+                _messageService.Loading(msgConfig);
+
+                int maxPosition = await Http.GetFromJsonAsync<int>($"api/MaxPosition/{pageName}");
+
+                @*link = new LinkSocial.Shared.Models.Link
+                {
+                    Title = linkModel.Title,
+                    URL = linkModel.URL,
+                    Position = maxPosition + 1,
+                    PageName = pageName,
+                    Active = linkModel.Active
+                };*@
+                NewLink.Position = maxPosition + 1;
+                NewLink.PageName = pageName;
+
+                var response = await Http.PostAsJsonAsync("api/Links/Create", NewLink);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await GetLinks();
+                    msgConfig.Content = "Link added";
+                    msgConfig.Duration = 2;
+                    _messageService.Success(msgConfig);
+                }
+                else
+                {
+                    msgConfig.Content = "Error adding link";
+                    msgConfig.Duration = 2;
+                    _messageService.Error(msgConfig);
+                }
+
+                @*linkModel = new LinkModel { };*@
+                NewLink = new LinkSocial.Shared.Models.Link();
+            }
+            else
+            {
+                _messageService.Error("You have reached the maximum number of links.");
+            }
+
+        }
+
+    }
